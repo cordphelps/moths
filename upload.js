@@ -89,97 +89,107 @@ fs.readFile('client_secret_drive.json', function processClientSecrets(err, conte
 function uploadImages(auth) {
 
 
-// verify client folder exists
-// https://www.tutorialspoint.com/nodejs/nodejs_file_system.htm
-console.log("checking local directory %s", options.src_dir);
-fs.readdir(options.src_dir, function(err, files){
-   if (err) {
-      console.log('directory scr_dir: %s not found', options.src_dir);
-      return console.error(err);
-   }
-
-   // client folder exists so create drive folder
    // https://developers.google.com/drive/v3/web/folder
+  var fileCounter = 0;
 
   var d = new Date();
-  var unique_file_name = options.multipart + '-' + d.toISOString();
+  var unique_folder_name = options.multipart + '-' + d.toISOString();
 
-  var folder = {};
-  var new_folder = '';
   var drive = google.drive({ version: 'v3'});
   var fileMetadata = {
-    'name' : unique_file_name,
+    'name' : unique_folder_name,
     'mimeType' : 'application/vnd.google-apps.folder',
     parents: [ FOLDER_ID ]
   };
+
   drive.files.create({ resource: fileMetadata, fields: 'id', auth: auth}, 
-    function(err, folder) {
-      if(err) {
+    function(err, file) {
+
+      if (err) {
         // Handle error
         console.log(err);
       } else {
-        new_folder = String(folder.id);
-        console.log('Folder Id: %s', folder.id);
-        return new_folder;
-      }
-  });
 
-   console.log('outside, Folder Id: %s', new_folder);
+        console.log("checking local directory %s", options.src_dir);
 
-   var fileCounter = 0;
+          // client folder exists ?
+          // https://www.tutorialspoint.com/nodejs/nodejs_file_system.htm
+        fs.readdir(options.src_dir, function(err, files_array){
 
-   files.forEach( function (file){
-    if (options.verbose == true) {
-      console.log( file );
-    }
-
-    // copy file from macOS to google-drive
-    // https://www.npmjs.com/package/googleapis#example-upload-an-image-to-google-drive-from-a-readable-stream
- 
-    // OPTIONS are defined at https://developers.google.com/drive/v3/reference/files#resource
-    d = new Date();
-    unique_file_name = d.toISOString() + file;
-    console.log('unique filename: %s', unique_file_name);
-
-    var fileMetadata = {
-      name: unique_file_name,
-      description: options.multipart,
-      parents: [ new_folder ]
-    };
-    var media = {
-      mimeType: 'image/jpeg',
-      // body: fs.createReadStream(file)
-      body: fs.createReadStream(options.src_dir + '/' + file)
-    };
-
-    drive.files.create({
-      auth: auth,
-      resource: fileMetadata,
-      media: media,
-      fields: 'id'
-      },
-      function(err, response) {
           if (err) {
-            console.log('drive.files.create error: %s %s', err, response);
-            return;
+            console.log('directory scr_dir: %s not found', options.src_dir);
+            return console.error(err);
+          }
+
+          console.log('new folder Id: %s', file.id);
+
+
+          files_array.forEach( function (sourceFile){
+
+            d = new Date();
+            var unique_file_name = d.toISOString() + sourceFile;
+
+            var newFileMetadata = {
+              'name': unique_file_name,
+              description: options.multipart,
+              parents: [ file.id ]
+              // parents: [ '0Bw4DMtLCtPMkVFdfQnBxcXdxYUU' ]
+            };
+
+            var media = {
+              mimeType: 'image/png',
+              // mimeType: 'image/jpeg',
+              //body: fs.createReadStream(file)
+              // body: fs.createReadStream(options.src_dir + '/' + file)
+              // body: fs.createReadStream(sourceFile)
+              body: fs.createReadStream(options.src_dir + '/' + sourceFile)
+            };
+
+            if (options.verbose == true) {
+              console.log( 'sourceFile: %s', sourceFile );
             }
-        }
-      );
 
-    console.log('origin: %s', options.src_dir + '/' + file);
+            // copy file from macOS to google-drive
+            // https://www.npmjs.com/package/googleapis#example-upload-an-image-to-google-drive-from-a-readable-stream
+ 
+            // OPTIONS are defined at https://developers.google.com/drive/v3/reference/files#resource
+            
+            console.log('\nunique filename: %s', unique_file_name);
+            console.log('create source: %s', options.src_dir + '/' + sourceFile);
+            console.log('parent: %s \n', file.id);
 
+            drive.files.create({
+              auth: auth,
+              resource: newFileMetadata,
+              media: media,
+              fields: 'id'
+              },
+              function(err, response) {
+                if (err) {
+                  console.log('drive.files.create error: %s %s', err, response);
+                  return;
+                  }
+              }
+            );  // end of drive.files.create()
 
+            console.log('origin: %s', options.src_dir + '/' + file);
 
-    fileCounter++;
-   });
+            fileCounter++;
 
-   if (options.verbose == true) {
-      console.log('%s files found', fileCounter);
+          }); // end of .foreach
+
+        }) // end of source directory read
+
+      } // end of drive.files.create(function) else
+
+    }); // end of drive.files.create() 
+
+    if (options.verbose == true) {
+        console.log('%s files found', fileCounter);
     }
 
-});
 
-}
+} // end of uploadImages()
 
 
 function displayOptions(options) {
