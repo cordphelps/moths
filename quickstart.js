@@ -16,6 +16,8 @@ var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
     process.env.USERPROFILE) + '/.credentials/';
 var TOKEN_PATH = TOKEN_DIR + 'sheets.googleapis.com-nodejs-quickstart.json';
 
+var SHEET_ID = '1bLQnN2IV_ai6SmRsrpgTzvR9Yo31O_84_XxmftRzHos';
+var RANGE = 'Sheet1!A2:C';
 var CSV_FILE = 'out.csv';
 
 // https://www.npmjs.com/package/csv-write-stream
@@ -131,8 +133,9 @@ function listMajors(auth) {
     spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', 
     ange: 'Class Data!A2:E',
     */
-    spreadsheetId: '1bLQnN2IV_ai6SmRsrpgTzvR9Yo31O_84_XxmftRzHos',
-    range: 'Sheet1!A2:C',
+    spreadsheetId: SHEET_ID,
+    range: RANGE,
+    
   }, function(err, response) {
     if (err) {
       console.log('The API returned an error: ' + err);
@@ -146,13 +149,11 @@ function listMajors(auth) {
 
       // https://www.tutorialspoint.com/nodejs/nodejs_file_system.htm
       fs.unlink(CSV_FILE, function(err) {
-
         if (err) {
-          console.log("no csv file to delete: %s", err);
+          console.log("no previous csv to delete");
         } else {
           console.log("previous csv deleted");
         }
-
       });
 
 
