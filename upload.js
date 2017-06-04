@@ -91,6 +91,7 @@ function uploadImages(auth) {
 
    // https://developers.google.com/drive/v3/web/folder
   var fileCounter = 0;
+  var pseudo_break = false;
 
   var d = new Date();
   var unique_folder_name = options.multipart + '-' + d.toISOString();
@@ -126,6 +127,25 @@ function uploadImages(auth) {
 
           files_array.forEach( function (sourceFile){
 
+            // verify the file looks legit
+            // https://stackoverflow.com/questions/18023787/illegal-break-statement-node-js
+            pseudo_break = false; 
+
+            // no OS generated files (.DS_store, .DS_store?, .Trashes, *.db)
+            var ext = sourceFile.substring(sourceFile.indexOf('.'));
+            if (ext != ".png") {
+              console.log('ignoring invalid source file type: %s', sourceFile);
+              pseudo_break = true;
+            }
+
+            // check file size
+            var stats = fs.statSync(options.src_dir + '/' + sourceFile); // (bytes)
+            if (stats.size < 100000 || stats.size > 5000000) {
+              console.log('ignoring source file:  %s   size:  %d  bytes', sourceFile, stats.size);
+              pseudo_break = true;;
+            }
+
+
             d = new Date();
             var unique_file_name = d.toISOString() + sourceFile;
 
@@ -138,10 +158,6 @@ function uploadImages(auth) {
 
             var media = {
               mimeType: 'image/png',
-              // mimeType: 'image/jpeg',
-              //body: fs.createReadStream(file)
-              // body: fs.createReadStream(options.src_dir + '/' + file)
-              // body: fs.createReadStream(sourceFile)
               body: fs.createReadStream(options.src_dir + '/' + sourceFile)
             };
 
@@ -158,23 +174,26 @@ function uploadImages(auth) {
             console.log('create source: %s', options.src_dir + '/' + sourceFile);
             console.log('parent: %s \n', file.id);
 
-            drive.files.create({
-              auth: auth,
-              resource: newFileMetadata,
-              media: media,
-              fields: 'id'
-              },
-              function(err, response) {
-                if (err) {
-                  console.log('drive.files.create error: %s %s', err, response);
-                  return;
-                  }
-              }
-            );  // end of drive.files.create()
+            if (!pseudo_break) {
+              drive.files.create({
+                auth: auth,
+                resource: newFileMetadata,
+                media: media,
+                fields: 'id'
+                },
+                function(err, response) {
+                  if (err) {
+                    console.log('drive.files.create error: %s %s', err, response);
+                    return;
+                    }
+                }
+              );  // end of drive.files.create()
 
-            console.log('origin: %s', options.src_dir + '/' + file);
+              console.log('origin: %s', options.src_dir + '/' + file);
 
-            fileCounter++;
+              fileCounter++;
+
+            } // end of pseudo_break
 
           }); // end of .foreach
 
