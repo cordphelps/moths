@@ -152,13 +152,15 @@ function uploadImages(auth) {
             var newFileMetadata = {
               'name': unique_file_name,
               description: options.multipart,
+              useContentAsIndexableText: false,
               parents: [ file.id ]
-              // parents: [ '0Bw4DMtLCtPMkVFdfQnBxcXdxYUU' ]
             };
 
             var media = {
-              mimeType: 'image/png',
-              body: fs.createReadStream(options.src_dir + '/' + sourceFile)
+              mimeType: 'image/jpg',
+              body: fs.createReadStream(options.src_dir + '/' + sourceFile),
+              viewersCanCopyContent: true,
+              writersCanShare: true
             };
 
             if (options.verbose == true) {
@@ -179,17 +181,42 @@ function uploadImages(auth) {
                 auth: auth,
                 resource: newFileMetadata,
                 media: media,
-                fields: 'id'
+                fields: ['id']
                 },
                 function(err, response) {
                   if (err) {
                     console.log('drive.files.create error: %s %s', err, response);
                     return;
-                    }
+                  } else {
+                    // file create success; get properties
+                    console.log('dump the properties\n %s', JSON.stringify(response));
+
+                    drive.files.get({
+                      auth: auth,
+                      fileId: response.id,
+                      //fields: 'webContentLink'  // <-- downloads the file
+                      fields: 'webViewLink'       // <-- "views" the file
+                    },
+                    function(err, response) {
+                      if (err) {
+                      console.log('drive.files.get error: %s %s', err, response);
+                      return;
+                      } else {
+                      // file create success; get properties
+                      console.log('get properties\n %s', JSON.stringify(response));
+                      // response.webViewLink: https://drive.google.com/file/d/0Bw4DMtLCtPMkOTlXR1l4Nkw1WGs/view?usp=drivesdk
+                      }
+                    });
+
+
+
+
+
+
+                  }
                 }
               );  // end of drive.files.create()
 
-              console.log('origin: %s', options.src_dir + '/' + file);
 
               fileCounter++;
 
