@@ -73,7 +73,7 @@ if (options.multipart == undefined) {
 
 
 // Load client secrets from a local file.
-fs.readFile('client_secret_drive.json', function processClientSecrets(err, content) {
+fs.readFile('client_secret_sheetsDriveVision.json', function processClientSecrets(err, content) {
   if (err) {
     console.log('Error loading client secret file: ' + err);
     return;
